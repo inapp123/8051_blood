@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 set(CMAKE_TOOLCHAIN_FILE "toolchain.cmake")
 
-project("8051")
+project("blood_type")
 
 
 function(ihx_to_hex bin)
