@@ -2,7 +2,7 @@
 #include "delay.h"
 #include "7seg.h"
 
-uint8_t SSEG_TABLE[SSEG_MAX] = { \
+const uint8_t SSEG_TABLE[SSEG_MAX] = { \
     0b00000000 /* nothing */ , \
     0b00111111 /* 0 */ , \
     0b00000110 /* 1 */ , \
@@ -111,76 +111,75 @@ void sseg_set_display(sseg_display_t *display, uint8_t index, uint8_t c){
     
 }
 
+
+void sseg_init_timer(void){
+    TMOD &= 0b11110000;
+    TMOD |= 0b00000010; // Mode 2
+    TH0 = 0x00;
+    TL0 = 0x00;
+    ET0 = 1;
+    TR0 = 1;
+}
+
 void sseg_display(sseg_display_t *display){
     if(display->is_rendering){
         return;
     }
 
-    if(display->display_pos < display->char_count && display->display_pos >= 0){
-        P0 = SSEG_TABLE[display->chars[display->display_pos]];
-        P2_2 = 0;
-        Delay50us();
-        P2_2 = 1;
-    }
-    else{
-        P0 = 0;
-        P2_2 = 0;
-        Delay50us();
-        P2_2 = 1;
-    }
-    
-    if(display->display_pos + 1 < display->char_count && display->display_pos + 1 >= 0){
-        P0 = SSEG_TABLE[display->chars[display->display_pos + 1]];
-        P2_3 = 0;
-        Delay50us();
-        P2_3 = 1;
-    }
-    else{
-        P0 = 0;
-        P2_3 = 0;
-        Delay50us();
-        P2_3 = 1;
-    }
-    
-    if(display->display_pos + 2 < display->char_count && display->display_pos + 2 >= 0){
-        P0 = SSEG_TABLE[display->chars[display->display_pos + 2]];
-        P2_4 = 0;
-        Delay50us();
-        P2_4 = 1;
-    }
-    else{
-        P0 = 0;
-        P2_4 = 0;
-        Delay50us();
-        P2_4 = 1;
+    P2_2 = 1;
+    P2_3 = 1;
+    P2_4 = 1;
+    P2_5 = 1;
+
+    switch (display->display_status)
+    {
+    case SSEG_READY_TO_DISPLAY_0:
+        if(display->display_pos < display->char_count && display->display_pos >= 0){
+            P0 = SSEG_TABLE[display->chars[display->display_pos]];
+            P2_2 = 0;
+        }
+        break;
+    case SSEG_READY_TO_DISPLAY_1:
+        if(display->display_pos + 1 < display->char_count && display->display_pos + 1 >= 0){
+            P0 = SSEG_TABLE[display->chars[display->display_pos + 1]];
+            P2_3 = 0;
+        }
+        break;
+    case SSEG_READY_TO_DISPLAY_2:
+        if(display->display_pos + 2 < display->char_count && display->display_pos + 2 >= 0){
+            P0 = SSEG_TABLE[display->chars[display->display_pos + 2]];
+            P2_4 = 0;
+        }
+        break;
+    case SSEG_READY_TO_DISPLAY_3:
+        if(display->display_pos + 3 < display->char_count && display->display_pos + 3 >= 0){
+            P0 = SSEG_TABLE[display->chars[display->display_pos + 3]];
+            P2_5 = 0;
+        }
+        break;
+    default:
+        break;
     }
 
-    if(display->display_pos + 3 < display->char_count && display->display_pos + 3 >= 0){
-        P0 = SSEG_TABLE[display->chars[display->display_pos + 3]];
-        P2_5 = 0;
-        Delay50us();
-        P2_5 = 1;
-    }
-    else{
-        P0 = 0;
-        P2_5 = 0;
-        Delay50us();
-        P2_5 = 1;
-    }
+    if(display->display_status == SSEG_READY_TO_DISPLAY_3){
+        display->display_status = SSEG_READY_TO_DISPLAY_0;
 
-
-    if(display->char_count > 4){
-        display->iter_count ++;
-        if(display->iter_count >= ITER_TO_NEXT_DISPLAY){
-            display->iter_count = 0;
-            display->display_pos ++;
-            if((int)display->display_pos >= (int)display->char_count){
-                display->display_pos = -4;
+        if(display->char_count > 4){
+            display->iter_count ++;
+            if(display->iter_count >= ITER_TO_NEXT_DISPLAY){
+                display->iter_count = 0;
+                display->display_pos ++;
+                if((int)display->display_pos >= (int)display->char_count){
+                    display->display_pos = -4;
+                }
             }
+        }
+        else{
+            display->display_pos = 0;
         }
     }
     else{
-        display->display_pos = 0;
+        display->display_status ++;
     }
     
 }

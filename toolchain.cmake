@@ -3,8 +3,8 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR 8051)
 
-set(CMAKE_C_FLAGS "--model-large --xram-size 512")
-
+set(CMAKE_C_FLAGS "--model-large --xram-size 256 --int-long-reent")
+# --stack-auto
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 # which compilers to use for C and C++
 set(CMAKE_C_COMPILER sdcc)

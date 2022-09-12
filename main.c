@@ -3,24 +3,49 @@
 #include "7seg.h"
 #include "delay.h"
 #include "key.h"
+#include <stdio.h>
+#include "blood.h"
 
 #define led P2_7
+
+typedef enum {
+    STATUS_SPLASH = 0,
+    STATUS_WAITING_FATHER_BLOOD_TYPE,
+    STATUS_CONFIRMING_FATHER_BLOOD_TYPE,
+    STATUS_WAITING_MOTHER_BLOOD_TYPE,
+    STATUS_CONFIRMING_MOTHER_BLOOD_TYPE,
+    STATUS_DELAYING,
+    STATUS_RESULT,
+} status_t;
 
 
 
 __sfr __at (0xE7) IAP_CONTR ;
 
 void serial_isr(void) __interrupt(4) {
+    if (TI)
+    {
+        TI = 0;
+    }
     if (RI)
     {
+        RI = 0;
         IAP_CONTR = 0x60;
     }
     
 }
 
+int putchar (int c)
+{
+    while (!TI);  /* wait until transmitter ready */
+    TI = 0;
+    SBUF = c;      /* output character */
+    return (c);
+}
+
 sseg_display_t disp;
 
-void timer0_isr(void) __interrupt(1) {
+void sseg_timer0_isr(void) __interrupt(1) {
     sseg_display(&disp);
 }
 
@@ -39,71 +64,173 @@ void init_serial(void){
     PT0 = 0;
 }
 
-void init_timer0(void){
-    TMOD = 0b00000010; // Mode 2
-    TH0 = 0x00;
-    TL0 = 0x00;
-    ET0 = 1;
-    TR0 = 1;
-}
+
+
 
 keys_t keys;
 // we dont have k and v in char
 void main(void)
 {
     init_serial();
-    init_timer0();
+    sseg_init_timer();
     EA = 1; // Enable Interrupts now!
 
-    uint16_t i = 0;
-    sseg_set_string(&disp, "Please input fathers blood type");
-    char buf[15];
 
+    // sseg_set_string(&disp, "blood type calculator");
+
+    uint8_t status = 0;
+    uint8_t father_blood_type = 0;
+    uint8_t mother_blood_type = 0;
+
+    blood_result_t* result;
+    char result_buf[SSEG_BUFFER_SIZE];
+
+    uint8_t result_back_2_zero = 0;
+    
     while(1)
     {
-        char *buf_ptr = buf;
         key_scan(&keys);
-        if(keys.S1){
-            *buf_ptr++ = '1';
-        }
-        if(keys.S2){
-            *buf_ptr++ = '2';
-        }
-        if(keys.S3){
-            *buf_ptr++ = '3';
-        }
-        if(keys.S4){
-            *buf_ptr++ = '4';
-        }
-        if(keys.S5){
-            *buf_ptr++ = '5';
-        }
-        if(keys.S6){
-            *buf_ptr++ = '6';
-        }
-        if(keys.S7){
-            *buf_ptr++ = '7';
-        }
-        if(keys.S8){
-            *buf_ptr++ = '8';
-        }
-        if(keys.S9){
-            *buf_ptr++ = '9';
-        }
         if(keys.S10){
-            *buf_ptr++ = 'A';
-        }
-        if(keys.S11){
-            *buf_ptr++ = 'B';
+            disp.display_pos = 0;
+            status = STATUS_WAITING_FATHER_BLOOD_TYPE;
+            result_back_2_zero = 0;
         }
 
-        if(buf_ptr != buf){
-            *buf_ptr = '\0';
-            sseg_set_string(&disp, buf);
+        switch (status)
+        {
+        case STATUS_SPLASH:
+            sseg_set_string(&disp, "blood type calculator. press S11 to start");
+            if(keys.S11){
+                disp.display_pos = 0;
+                status = STATUS_WAITING_FATHER_BLOOD_TYPE;
+            }
+            break;
+        case STATUS_WAITING_FATHER_BLOOD_TYPE:
+            sseg_set_string(&disp, "father blood type");
+            if(keys.S5){
+                father_blood_type = BLOODTYPE_A;
+                status = STATUS_CONFIRMING_FATHER_BLOOD_TYPE;
+            }
+            else if(keys.S6){
+                father_blood_type = BLOODTYPE_B;
+                status = STATUS_CONFIRMING_FATHER_BLOOD_TYPE;
+            }
+            else if(keys.S7){
+                father_blood_type = BLOODTYPE_AB;
+                status = STATUS_CONFIRMING_FATHER_BLOOD_TYPE;
+            }
+            else if(keys.S8){
+                father_blood_type = BLOODTYPE_O;
+                status = STATUS_CONFIRMING_FATHER_BLOOD_TYPE;
+            }
+            break;
+        case STATUS_CONFIRMING_FATHER_BLOOD_TYPE:
+            switch (father_blood_type)
+            {
+            case BLOODTYPE_A:
+                sseg_set_string(&disp, "A");
+                break;
+            case BLOODTYPE_B:
+                sseg_set_string(&disp, "B");
+                break;
+            case BLOODTYPE_AB:
+                sseg_set_string(&disp, "AB");
+                break;
+            case BLOODTYPE_O:
+                sseg_set_string(&disp, "O");
+                break;
+            default:
+                break;
+            }
+            if(keys.S5){
+                father_blood_type = BLOODTYPE_A;
+            }
+            else if(keys.S6){
+                father_blood_type = BLOODTYPE_B;
+            }
+            else if(keys.S7){
+                father_blood_type = BLOODTYPE_AB;
+            }
+            else if(keys.S8){
+                father_blood_type = BLOODTYPE_O;
+            }
+            else if(keys.S11){
+                status = STATUS_WAITING_MOTHER_BLOOD_TYPE;
+            }
+
+            break;
+        case STATUS_WAITING_MOTHER_BLOOD_TYPE:
+            sseg_set_string(&disp, "mother blood type");
+            if(keys.S5){
+                mother_blood_type = BLOODTYPE_A;
+                status = STATUS_CONFIRMING_MOTHER_BLOOD_TYPE;
+            }
+            else if(keys.S6){
+                mother_blood_type = BLOODTYPE_B;
+                status = STATUS_CONFIRMING_MOTHER_BLOOD_TYPE;
+            }
+            else if(keys.S7){
+                mother_blood_type = BLOODTYPE_AB;
+                status = STATUS_CONFIRMING_MOTHER_BLOOD_TYPE;
+            }
+            else if(keys.S8){
+                mother_blood_type = BLOODTYPE_O;
+                status = STATUS_CONFIRMING_MOTHER_BLOOD_TYPE;
+            }
+            break;
+        case STATUS_CONFIRMING_MOTHER_BLOOD_TYPE:
+            switch (mother_blood_type)
+            {
+            case BLOODTYPE_A:
+                sseg_set_string(&disp, "A");
+                break;
+            case BLOODTYPE_B:
+                sseg_set_string(&disp, "B");
+                break;
+            case BLOODTYPE_AB:
+                sseg_set_string(&disp, "AB");
+                break;
+            case BLOODTYPE_O:
+                sseg_set_string(&disp, "O");
+                break;
+            default:
+                break;
+            }
+            if(keys.S5){
+                father_blood_type = BLOODTYPE_A;
+            }
+            else if(keys.S6){
+                father_blood_type = BLOODTYPE_B;
+            }
+            else if(keys.S7){
+                father_blood_type = BLOODTYPE_AB;
+            }
+            else if(keys.S8){
+                father_blood_type = BLOODTYPE_O;
+            }
+            else if(keys.S11){
+                sseg_set_string(&disp, "Calculating....");
+                status = STATUS_RESULT;
+            }
+            break;
+        
+        case STATUS_RESULT:
+            if(result_back_2_zero == 0){
+                result = calculate_blood(father_blood_type, mother_blood_type);
+                blood_result_format(result, result_buf);
+                sseg_set_string(&disp, result_buf);
+                disp.display_pos = -1;
+                result_back_2_zero = 1;
+            }
+            
+            break;
+
+        default:
+            break;
         }
-        else{
-            sseg_set_string(&disp, "Nothing Pressed");
-        }
+
+
+        // Delay50ms();
 
     }
 }

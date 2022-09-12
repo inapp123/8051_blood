@@ -3,8 +3,8 @@
 
 #pragma once
 #define SSEG_COUNT 4
-#define SSEG_BUFFER_SIZE 100
-#define ITER_TO_NEXT_DISPLAY 500
+#define SSEG_BUFFER_SIZE 60
+#define ITER_TO_NEXT_DISPLAY 200
 
 typedef enum {
     SSEG_NOTHING = 0,
@@ -50,6 +50,12 @@ typedef enum {
     SSEG_MAX
 }sseg_char_t;
 
+typedef enum{
+    SSEG_READY_TO_DISPLAY_0 = 0,
+    SSEG_READY_TO_DISPLAY_1,
+    SSEG_READY_TO_DISPLAY_2,
+    SSEG_READY_TO_DISPLAY_3,
+} sseg_disp_stat_t;
 
 typedef struct
 {
@@ -58,8 +64,10 @@ typedef struct
     uint16_t iter_count;
     uint8_t char_count;
     _Bool is_rendering;
+    uint8_t display_status;
 } sseg_display_t;
 
+void sseg_init_timer(void);
 void sseg_set_string(sseg_display_t *sseg, char *str);
 void sseg_set_display(sseg_display_t *display, uint8_t index, uint8_t c);
 void sseg_display(sseg_display_t *display);
