@@ -3,8 +3,8 @@
 
 #pragma once
 #define SSEG_COUNT 4
-#define SSEG_BUFFER_SIZE 60
-#define ITER_TO_NEXT_DISPLAY 200
+#define SSEG_BUFFER_SIZE 50
+#define ITER_TO_NEXT_DISPLAY 300
 
 typedef enum {
     SSEG_NOTHING = 0,

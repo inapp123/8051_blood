@@ -5,7 +5,7 @@
 const blood_result_t bl_res_a_a = {
     .possible_blood_type_count = 2,
     .possible_blood_type = {BLOODTYPE_A, BLOODTYPE_O},
-    .possible_gene_type_count = 2,
+    .possible_gene_type_count = 3,
     .possible_gene_types = {BLOODGENE_AA, BLOODGENE_AO , BLOODGENE_OO}
 };
 
@@ -47,7 +47,7 @@ const blood_result_t bl_res_ab_o = {
 const blood_result_t bl_res_ab_ab = {
     .possible_blood_type_count = 3,
     .possible_blood_type = {BLOODTYPE_A, BLOODTYPE_AB, BLOODTYPE_B},
-    .possible_gene_type_count = 1,
+    .possible_gene_type_count = 3,
     .possible_gene_types = {BLOODGENE_AA, BLOODGENE_BB, BLOODGENE_AB}
 };
 

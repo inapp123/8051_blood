@@ -10,6 +10,7 @@
 
 typedef enum {
     STATUS_SPLASH = 0,
+    STATUS_ADJUST_DELAY_TIME,
     STATUS_WAITING_FATHER_BLOOD_TYPE,
     STATUS_CONFIRMING_FATHER_BLOOD_TYPE,
     STATUS_WAITING_MOTHER_BLOOD_TYPE,
@@ -86,6 +87,9 @@ void main(void)
     char result_buf[SSEG_BUFFER_SIZE];
 
     uint8_t result_back_2_zero = 0;
+
+    __data uint8_t delay_time = 0;
+    __data uint8_t delay;
     
     while(1)
     {
@@ -96,10 +100,15 @@ void main(void)
             result_back_2_zero = 0;
         }
 
+        else if(keys.S9 && status != STATUS_RESULT){
+            disp.display_pos = 0;
+            status = STATUS_ADJUST_DELAY_TIME;
+        }
+
         switch (status)
         {
         case STATUS_SPLASH:
-            sseg_set_string(&disp, "blood type calculator. press S11 to start");
+            sseg_set_string(&disp, "blood type calculator.");
             if(keys.S11){
                 disp.display_pos = 0;
                 status = STATUS_WAITING_FATHER_BLOOD_TYPE;
@@ -218,13 +227,57 @@ void main(void)
             if(result_back_2_zero == 0){
                 result = calculate_blood(father_blood_type, mother_blood_type);
                 blood_result_format(result, result_buf);
+
+                delay = delay_time;
+                while(delay--){
+                    DelayInCalc();
+                }
+
                 sseg_set_string(&disp, result_buf);
                 disp.display_pos = -1;
                 result_back_2_zero = 1;
             }
-            
             break;
 
+        case STATUS_ADJUST_DELAY_TIME:
+           
+            switch (delay_time)
+            {
+            case 0:
+                sseg_set_string(&disp,"DLY0");
+                break;
+            case 1:
+                sseg_set_string(&disp,"DLY1");
+                break;
+            case 2:
+                sseg_set_string(&disp,"DLY2");
+                break;
+            case 3:
+                sseg_set_string(&disp,"DLY3");
+                break;
+            case 4:
+                sseg_set_string(&disp,"DLY4");
+                break;
+            case 5:
+                sseg_set_string(&disp,"DLY5");
+                break;
+            
+            default:
+                break;
+            }
+
+            if(keys.S1 && delay_time > 0){
+                delay_time -- ;
+            }
+            else if(keys.S4 && delay_time < 5 ){
+                delay_time ++ ;
+            }
+
+            if(keys.S11){
+                status = STATUS_WAITING_FATHER_BLOOD_TYPE;
+            }
+
+            break;
         default:
             break;
         }

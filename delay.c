@@ -38,3 +38,16 @@ void Delayms(uint8_t ms_count)		//@11.0592MHz
         } while (--i);
     }
 }
+
+
+void DelayInCalc(){
+	__data unsigned char i,j;
+
+	_nop_();
+	i = 18;
+	j = 235;
+	do
+	{
+		while (--j);
+	} while (--i);
+}
